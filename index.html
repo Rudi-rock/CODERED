@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClinCode — Resolving Clinical Ambiguity</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #060810;
+  --surface: #0d1117;
+  --surface2: #131920;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --accent: #00d4aa;
+  --accent2: #3b82f6;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --success: #10b981;
+  --mono: 'IBM Plex Mono', monospace;
+  --serif: 'DM Serif Display', serif;
+  --sans: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* GRID BACKGROUND */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(6,8,16,0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+.nav-logo span { color: var(--muted); }
+.nav-links { display: flex; gap: 2rem; }
+.nav-links a {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  transition: color .2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+/* HERO */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8rem 2rem 4rem;
+  z-index: 1;
+}
+.hero-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp .6s .2s forwards;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 1.1;
+  max-width: 900px;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp .7s .35s forwards;
+}
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+.hero-sub {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 560px;
+  font-weight: 300;
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  animation: fadeUp .7s .5s forwards;
+}
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp .7s .65s forwards;
+}
+.pill {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  background: var(--surface);
+}
+.pill.accent { border-color: rgba(0,212,170,0.3); color: var(--accent); background: rgba(0,212,170,0.05); }
+.hero-demo-wrap {
+  width: 100%;
+  max-width: 680px;
+  opacity: 0;
+  animation: fadeUp .8s .8s forwards;
+}
+.hero-demo {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: left;
+}
+.demo-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.demo-input {
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  width: 100%;
+  margin-bottom: 1rem;
+  font-family: var(--sans);
+  line-height: 1.5;
+}
+.demo-arrow {
+  text-align: center;
+  color: var(--muted);
+  font-size: 20px;
+  margin-bottom: 1rem;
+  animation: bounce 1.5s infinite;
+}
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+.demo-output {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.code-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.code-id {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  min-width: 64px;
+}
+.code-label { font-size: 13px; color: var(--text); flex: 1; }
+.conf-wrap { display: flex; align-items: center; gap: 8px; }
+.conf-bar-outer { width: 60px; height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.conf-bar-inner { height: 100%; border-radius: 2px; background: var(--success); }
+.conf-pct { font-family: var(--mono); font-size: 11px; color: var(--success); min-width: 32px; }
+.conf-pct.med { color: var(--warn); }
+.conf-bar-inner.med { background: var(--warn); }
+
+/* SCROLL CTA */
+.scroll-cue {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  animation: fadeUp .6s 1.2s forwards;
+}
+.scroll-line {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, var(--muted), transparent);
+  animation: scrollLine 1.5s infinite;
+}
+@keyframes scrollLine { 0%{opacity:1;transform:scaleY(1)} 100%{opacity:0;transform:scaleY(0) translateY(16px)} }
+
+/* SECTIONS */
+section {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6rem 2rem;
+}
+.section-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+.section-sub {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 560px;
+  font-weight: 300;
+  margin-bottom: 3rem;
+}
+
+/* PROBLEM SECTION */
+.problem-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+.problem-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.problem-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.problem-card.bad::before { background: var(--danger); }
+.problem-card.good::before { background: var(--success); }
+.card-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.card-eyebrow.bad { color: var(--danger); }
+.card-eyebrow.good { color: var(--success); }
+.card-title { font-size: 18px; font-weight: 500; margin-bottom: .75rem; }
+.card-body { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.check-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; }
+.check-list li {
+  font-size: 14px;
+  color: var(--muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.check-list li::before { content: '×'; color: var(--danger); font-weight: 500; flex-shrink: 0; margin-top: 1px; }
+.check-list.good li::before { content: '✓'; color: var(--success); }
+
+/* PIPELINE SECTION */
+.pipeline-wrap { display: flex; flex-direction: column; gap: 0; }
+.pipe-step {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 1.5rem;
+  position: relative;
+  padding-bottom: 2rem;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity .5s, transform .5s;
+}
+.pipe-step.visible { opacity: 1; transform: translateX(0); }
+.pipe-step:last-child { padding-bottom: 0; }
+.pipe-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.pipe-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  flex-shrink: 0;
+  z-index: 1;
+}
+.pipe-line {
+  flex: 1;
+  width: 1px;
+  background: var(--border2);
+  margin-top: 6px;
+}
+.pipe-step:last-child .pipe-line { display: none; }
+.pipe-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.pipe-content:hover { border-color: var(--border2); }
+.pipe-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.pipe-title { font-size: 17px; font-weight: 500; margin-bottom: 6px; }
+.pipe-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.pipe-example {
+  margin-top: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.pipe-example .hi { color: var(--accent); }
+.pipe-example .warn { color: var(--warn); }
+.pipe-example .ok { color: var(--success); }
+
+/* AMBIGUITY SECTION */
+.ambig-demo {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.ambig-input-row {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 1.5rem;
+}
+.ambig-input-row span.hi { color: var(--warn); }
+.ambig-flag {
+  background: rgba(245,158,11,0.06);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.ambig-flag-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--warn);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.ambig-q { font-size: 14px; color: var(--text); margin-bottom: 10px; }
+.ambig-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ambig-opt {
+  font-size: 12px;
+  padding: 5px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--surface2);
+}
+.ambig-opt:hover, .ambig-opt.sel {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,170,0.07);
+}
+.ambig-resolve {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: none;
+}
+.ambig-resolve.show { display: block; }
+.resolve-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--success);
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+.resolve-code {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.resolve-code .code-id { font-size: 16px; }
+.resolve-reason {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-radius: 8px;
+  line-height: 1.6;
+}
+.resolve-reason .hl {
+  background: rgba(0,212,170,0.12);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* INNOVATION SECTION */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0;
+}
+.compare-table th {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.compare-table th:last-child { color: var(--accent); }
+.compare-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.compare-table td:first-child { color: var(--muted); }
+.compare-table td:nth-child(2) { color: var(--danger); }
+.compare-table td:last-child { color: var(--success); }
+.compare-table tr:last-child td { border-bottom: none; }
+
+/* TECH STACK */
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.stack-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: border-color .2s;
+}
+.stack-card:hover { border-color: var(--border2); }
+.stack-icon {
+  font-family: var(--mono);
+  font-size: 20px;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.stack-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+.stack-desc { font-size: 13px; color: var(--muted); }
+
+/* IMPACT */
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.impact-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.impact-num {
+  font-family: var(--serif);
+  font-size: 3rem;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.impact-label { font-size: 13px; color: var(--muted); }
+
+/* FOOTER */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 2rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+footer span { color: var(--accent); }
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* DIVIDER */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* HIGHLIGHT TEXT */
+.hl-text { color: var(--accent); }
+
+@media (max-width: 700px) {
+  .problem-grid { grid-template-columns: 1fr; }
+  .impact-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">CLIN<span>/</span>CODE</div>
+  <div class="nav-links">
+    <a href="#problem">Problem</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#ambiguity">Ambiguity</a>
+    <a href="#innovation">Innovation</a>
+    <a href="#tech">Tech</a>
+  </div>
+  <div class="nav-badge">v0.1.0 — BETA</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">Research Project · SRMIST · 2025</div>
+  <h1>Resolving Clinical <em>Ambiguity</em><br/>with Explainable AI</h1>
+  <p class="hero-sub">An intelligent system that converts unstructured doctor notes into accurate ICD-10 codes — with reasoning, confidence, and uncertainty detection.</p>
+  <div class="hero-pills">
+    <span class="pill accent">ICD-10 Coding</span>
+    <span class="pill">NLP · BioBERT</span>
+    <span class="pill">Ambiguity Detection</span>
+    <span class="pill">Explainable AI</span>
+    <span class="pill">Clinical NLP</span>
+  </div>
+  <div class="hero-demo-wrap">
+    <div class="hero-demo">
+      <div class="demo-label">// CLINICAL INPUT</div>
+      <div class="demo-input">"Patient has diabetes with kidney issues and proteinuria"</div>
+      <div class="demo-arrow">↓</div>
+      <div class="demo-label">// ICD-10 OUTPUT</div>
+      <div class="demo-output">
+        <div class="code-row">
+          <span class="code-id">E11.65</span>
+          <span class="code-label">Type 2 diabetes with hyperglycemia + CKD</span>
+          <div class="conf-wrap">
+            <div class="conf-bar-outer"><div class="conf-bar-inner" style="width:87%"></div></div>
+            <span class="conf-pct">87%</span>
+          </div>
+        </div>
+        <div class="code-row">
+          <span class="code-id">N18.3</span>
+          <span class="code-label">Chronic kidney disease, stage 3</span>
+          <div class="conf-wrap">
+            <div class="conf-bar-outer"><div class="conf-bar-inner" style="width:91%"></div></div>
+            <span class="conf-pct">91%</span>
+          </div>
+        </div>
+        <div class="code-row">
+          <span class="code-id">E11.69</span>
+          <span class="code-label">Alternative — T2DM with other complication</span>
+          <div class="conf-wrap">
+            <div class="conf-bar-outer"><div class="conf-bar-inner med" style="width:22%"></div></div>
+            <span class="conf-pct med">22%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue">
+    SCROLL
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="section-tag">01 — The Problem</div>
+  <h2 class="section-title">Why hospitals get ICD coding wrong</h2>
+  <p class="section-sub">Doctors write short, incomplete, ambiguous notes. ICD-10 demands extreme specificity. The gap between them costs billions.</p>
+  <div class="problem-grid">
+    <div class="problem-card bad">
+      <div class="card-eyebrow bad">Current reality</div>
+      <div class="card-title">Naive coding systems</div>
+      <ul class="check-list">
+        <li>Take text at face value, no reasoning</li>
+        <li>Ignore ambiguity and missing information</li>
+        <li>Output one code with no explanation</li>
+        <li>Cannot handle negation ("no evidence of...")</li>
+        <li>Black box — no trust from clinicians</li>
+        <li>Wrong codes → claim denials + audits</li>
+      </ul>
+    </div>
+    <div class="problem-card good">
+      <div class="card-eyebrow good">ClinCode approach</div>
+      <div class="card-title">Uncertainty-first reasoning</div>
+      <ul class="check-list good">
+        <li>Detects what is missing before coding</li>
+        <li>Flags ambiguity and asks clarifying questions</li>
+        <li>Outputs ranked codes with calibrated confidence</li>
+        <li>Handles negation — never codes ruled-out conditions</li>
+        <li>Full explanation for every decision made</li>
+        <li>Feedback loop — improves with every correction</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- PIPELINE -->
+<section id="pipeline">
+  <div class="section-tag">02 — How It Works</div>
+  <h2 class="section-title">Six-stage reasoning pipeline</h2>
+  <p class="section-sub">Each stage builds on the last. Uncertainty propagates forward. Nothing is discarded.</p>
+  <div class="pipeline-wrap">
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num">01</div><div class="pipe-line"></div></div>
+      <div>
+        <div class="pipe-content">
+          <div class="pipe-tag">Preprocessing</div>
+          <div class="pipe-title">Normalize + expand</div>
+          <div class="pipe-desc">Expand medical abbreviations, strip noise, tokenize. DM → Diabetes Mellitus. HTN → Hypertension. Every ambiguous shorthand resolved before analysis begins.</div>
+          <div class="pipe-example">
+            <span class="hi">DM</span> → Diabetes Mellitus &nbsp;·&nbsp; <span class="hi">CKD</span> → Chronic Kidney Disease &nbsp;·&nbsp; <span class="hi">HTN</span> → Hypertension
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num">02</div><div class="pipe-line"></div></div>
+      <div>
+        <div class="pipe-content">
+          <div class="pipe-tag">Medical NER</div>
+          <div class="pipe-title">Extract entities</div>
+          <div class="pipe-desc">BioBERT/ClinicalBERT identifies diseases, symptoms, modifiers, and negated conditions. Each entity tagged with type and confidence score.</div>
+          <div class="pipe-example">
+            <span class="ok">DISEASE</span>: Type 2 Diabetes · CKD stage 3 &nbsp;·&nbsp; <span class="warn">SYMPTOM</span>: Proteinuria &nbsp;·&nbsp; <span style="color:var(--danger)">NEGATED</span>: Retinopathy
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num">03</div><div class="pipe-line"></div></div>
+      <div>
+        <div class="pipe-content">
+          <div class="pipe-tag">Relationship Modeling</div>
+          <div class="pipe-title">Understand context</div>
+          <div class="pipe-desc">Dependency parsing detects cause-effect relationships between entities. This is where most systems fail — ignoring that diabetes caused the kidney disease changes which code is correct.</div>
+          <div class="pipe-example">
+            Type 2 Diabetes <span class="hi">→ complication →</span> CKD &nbsp;·&nbsp; CKD <span class="hi">→ manifests as →</span> Proteinuria
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num">04</div><div class="pipe-line"></div></div>
+      <div>
+        <div class="pipe-content">
+          <div class="pipe-tag">Ambiguity Detection — Core USP</div>
+          <div class="pipe-title">Find what's missing</div>
+          <div class="pipe-desc">Rule-based checks scan for missing attributes. Diabetes without a type. MI without initial/subsequent. Asthma without severity. Each gap is flagged with a clarifying question instead of a silent guess.</div>
+          <div class="pipe-example">
+            <span class="warn">FLAG</span>: diabetes_type_unknown &nbsp;·&nbsp; <span class="warn">FLAG</span>: ckd_cause_unclear &nbsp;·&nbsp; <span class="ok">RESOLVED</span>: no_retinopathy (negation scoped)
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num">05</div><div class="pipe-line"></div></div>
+      <div>
+        <div class="pipe-content">
+          <div class="pipe-tag">ICD-10 Inference</div>
+          <div class="pipe-title">Map to codes</div>
+          <div class="pipe-desc">SapBERT embeddings + FAISS similarity search across 70,000+ ICD codes. Outputs ranked candidates with calibrated confidence. Exploits ICD hierarchy — partial predictions are valid and useful.</div>
+          <div class="pipe-example">
+            <span class="ok">E11.65</span> → 0.87 &nbsp;·&nbsp; <span class="ok">N18.3</span> → 0.91 &nbsp;·&nbsp; <span class="warn">E11.69</span> → 0.22 (alt)
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-num">06</div><div class="pipe-line"></div></div>
+      <div>
+        <div class="pipe-content">
+          <div class="pipe-tag">Explainability</div>
+          <div class="pipe-title">Show your reasoning</div>
+          <div class="pipe-desc">Every code is traced back to the exact text span that triggered it. Clinicians see which words drove each decision. Override buttons feed corrections back into the model training loop.</div>
+          <div class="pipe-example">
+            E11.65 selected because: <span class="ok">"type 2 diabetes"</span> + <span class="ok">"proteinuria"</span> + <span class="ok">"CKD"</span> co-occurrence pattern
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- AMBIGUITY DEMO -->
+<section id="ambiguity">
+  <div class="section-tag">03 — Core Innovation</div>
+  <h2 class="section-title">Live ambiguity resolution</h2>
+  <p class="section-sub">Instead of silently guessing, the system surfaces uncertainty and asks. Click an option below to see how the output changes.</p>
+  <div class="ambig-demo">
+    <div class="demo-label">// INPUT</div>
+    <div class="ambig-input-row">"Patient has <span class="hi">diabetes</span> with kidney issues"</div>
+    <div class="demo-label" style="margin-bottom:10px">// AMBIGUITY FLAGS</div>
+    <div class="ambig-flag">
+      <div class="ambig-flag-title">⚠ AMBIGUITY DETECTED</div>
+      <div class="ambig-q">Is the diabetes insulin-dependent (Type 1) or non-insulin-dependent (Type 2)?</div>
+      <div class="ambig-opts">
+        <button class="ambig-opt" onclick="resolveDemo(this,'E10','Type 1 Diabetes Mellitus','insulin-dependent pattern + no metformin mention')">Type 1 (E10)</button>
+        <button class="ambig-opt" onclick="resolveDemo(this,'E11','Type 2 Diabetes Mellitus','most prevalent + no insulin mention detected')">Type 2 (E11)</button>
+        <button class="ambig-opt" onclick="resolveDemo(this,'E13','Other specified DM','atypical presentation — requires chart review')">Other / unknown</button>
+      </div>
+    </div>
+    <div class="ambig-resolve" id="ambig-resolve">
+      <div class="resolve-label">// RESOLVED OUTPUT</div>
+      <div class="resolve-code">
+        <span class="code-id" id="resolve-code-id">—</span>
+        <span class="code-label" id="resolve-code-label">—</span>
+        <div class="conf-wrap">
+          <div class="conf-bar-outer"><div class="conf-bar-inner" style="width:89%"></div></div>
+          <span class="conf-pct">89%</span>
+        </div>
+      </div>
+      <div class="resolve-reason" id="resolve-reason">—</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- INNOVATION TABLE -->
+<section id="innovation">
+  <div class="section-tag">04 — Why This Is Different</div>
+  <h2 class="section-title">Not classification.<br/>Uncertainty resolution.</h2>
+  <p class="section-sub">The real breakthrough is treating missing information as first-class data, not an error to suppress.</p>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>Naive system</th>
+        <th>ClinCode</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Problem framing</td><td>Text → Code (classification)</td><td>Text → Meaning → Uncertainty → Code</td></tr>
+      <tr><td>Missing attributes</td><td>Silent guess</td><td>Flagged + clarified</td></tr>
+      <tr><td>Negation handling</td><td>Ignored — codes ruled-out conditions</td><td>NegEx scoping — zero false positives</td></tr>
+      <tr><td>Output</td><td>Single code, no confidence</td><td>Ranked codes + calibrated confidence</td></tr>
+      <tr><td>Explainability</td><td>Black box</td><td>Every code traced to source spans</td></tr>
+      <tr><td>Feedback loop</td><td>None</td><td>Every override = labeled training data</td></tr>
+      <tr><td>Trust model</td><td>Trust me blindly</td><td>Here is exactly why I said this</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<hr class="divider"/>
+
+<!-- TECH -->
+<section id="tech">
+  <div class="section-tag">05 — Tech Stack</div>
+  <h2 class="section-title">Built on proven clinical NLP</h2>
+  <p class="section-sub">Every component chosen for medical domain accuracy, not general-purpose convenience.</p>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-icon">[NER]</div>
+      <div class="stack-name">BioBERT / ClinicalBERT</div>
+      <div class="stack-desc">HuggingFace transformer fine-tuned on biomedical literature for entity extraction</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">[NEG]</div>
+      <div class="stack-name">NegSpacy</div>
+      <div class="stack-desc">Clinical negation detection — catches "no evidence of", "ruled out", "absent"</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">[MAP]</div>
+      <div class="stack-name">SapBERT + FAISS</div>
+      <div class="stack-desc">Medical entity normalization with 70k+ ICD code vector similarity search</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">[REL]</div>
+      <div class="stack-name">scispaCy</div>
+      <div class="stack-desc">Scientific spaCy model for dependency parsing and cause-effect relation extraction</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">[API]</div>
+      <div class="stack-name">FastAPI + Python</div>
+      <div class="stack-desc">6 modular endpoints, one per pipeline stage. Pydantic v2 schemas throughout</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">[UI]</div>
+      <div class="stack-name">Next.js 14</div>
+      <div class="stack-desc">React frontend with live pipeline visualization and interactive ambiguity resolution</div>
+    </div>
+  </div>
+
+  <div class="impact-grid" style="margin-top:3rem">
+    <div class="impact-card">
+      <div class="impact-num">70k+</div>
+      <div class="impact-label">ICD-10 codes searchable</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-num">6</div>
+      <div class="impact-label">reasoning pipeline stages</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-num">0</div>
+      <div class="impact-label">silent wrong guesses</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CLINCODE &nbsp;·&nbsp; <span>SRMIST</span> &nbsp;·&nbsp; Built by Rudra Pratap &amp; Antigravity &nbsp;·&nbsp; 2025
+</footer>
+
+<script>
+function resolveDemo(btn, code, label, reason) {
+  document.querySelectorAll('.ambig-opt').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('resolve-code-id').textContent = code + '.xx';
+  document.getElementById('resolve-code-label').textContent = label;
+  document.getElementById('resolve-reason').innerHTML =
+    'Selected because: <span class="hl">' + btn.textContent + '</span> chosen by clinician. Reason: ' + reason + '. Confidence upgraded from probabilistic to <span class="hl">deterministic</span> — ambiguity fully resolved.';
+  const r = document.getElementById('ambig-resolve');
+  r.classList.add('show');
+}
+
+const steps = document.querySelectorAll('.pipe-step');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), 0);
+    }
+  });
+}, { threshold: 0.15 });
+steps.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
