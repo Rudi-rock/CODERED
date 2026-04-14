@@ -58,9 +58,15 @@ E11.69 → Alternative code (22%)
 
 Diabetes + kidney issue → linked complication
 Proteinuria → strengthens kidney diagnosis
+
+
 🧠 Core Innovation
 
+
+
 Instead of blindly predicting codes, ClinCode detects ambiguity, resolves it, and explains decisions.
+
+
 
 🛠️ Tech Stack
 AI / NLP
@@ -73,22 +79,33 @@ Python
 FastAPI
 Frontend
 Next.js / React
+
+
 🔥 Why This Project Stands Out
 Traditional Systems	ClinCode
 Direct prediction	Reasoning-based system
 Ignores ambiguity	Detects & resolves ambiguity
 Black-box output	Fully explainable
 Single code	Ranked codes with confidence
+
+
 🎯 Impact
 Improves coding accuracy
 Reduces manual workload
 Builds trust in AI for healthcare
 Prevents costly billing errors
+
+
 🧪 Future Improvements
 Integration with hospital EHR systems
 Better clinical dataset fine-tuning
 Real-time doctor assistant interface
 Continuous learning from user feedback
+
+
+
+
+
 👨‍💻 Authors
 Rudra Pratap Singh
 Team Antigravity
