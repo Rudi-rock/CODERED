@@ -86,6 +86,36 @@ nav {
   letter-spacing: 0.06em;
 }
 
+/* CTA BUTTON */
+.demo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  margin-top: 2rem;
+  background: linear-gradient(135deg, rgba(0,212,170,0.2), rgba(59,130,246,0.15));
+  border: 1.5px solid var(--accent);
+  border-radius: 28px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+  font-weight: 500;
+}
+.demo-cta:hover {
+  background: linear-gradient(135deg, rgba(0,212,170,0.3), rgba(59,130,246,0.25));
+  border-color: rgba(0,212,170,0.8);
+  box-shadow: 0 8px 32px rgba(0,212,170,0.15);
+  transform: translateY(-2px);
+}
+.demo-cta::after {
+  content: '→';
+  font-size: 16px;
+}
+
 /* HERO */
 .hero {
   position: relative;
@@ -658,6 +688,7 @@ footer span { color: var(--accent); }
       </div>
     </div>
   </div>
+  <a href="demo.html" class="demo-cta">Try Interactive Demo</a>
   <div class="scroll-cue">
     SCROLL
     <div class="scroll-line"></div>

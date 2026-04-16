@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClinCode — Interactive Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #070a12;
+  --surf: #0e1420;
+  --surf2: #141c2a;
+  --b1: rgba(255,255,255,0.07);
+  --b2: rgba(255,255,255,0.13);
+  --text: #dde3f0;
+  --muted: #6b7a96;
+  --acc: #00e5b0;
+  --acc2: #3b82f6;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --ok: #10b981;
+  --mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; }
+.app { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+.logo { font-family: var(--mono); font-size: 13px; color: var(--acc); letter-spacing: .1em; margin-bottom: 2rem; opacity: .8; }
+.logo span { color: var(--muted); }
+.logo-back { display: inline-block; margin-right: 1rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+.logo-back:hover { opacity: 1; }
+
+h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 600; line-height: 1.15; margin-bottom: .5rem; }
+h1 em { font-style: italic; color: var(--acc); }
+.subtitle { font-size: 14px; color: var(--muted); margin-bottom: 2rem; font-weight: 300; }
+
+.input-section { background: var(--surf); border: 1px solid var(--b2); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.input-label { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .6rem; }
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: .8rem; }
+.preset-btn { font-size: 12px; padding: 5px 12px; border: 1px solid var(--b2); border-radius: 20px; background: var(--surf2); color: var(--muted); cursor: pointer; transition: all .15s; font-family: var(--mono); }
+.preset-btn:hover, .preset-btn.active { border-color: var(--acc); color: var(--acc); background: rgba(0,229,176,.07); }
+textarea { width: 100%; background: var(--bg); border: 1px solid var(--b2); border-radius: 9px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; resize: none; height: 72px; line-height: 1.5; transition: border-color .2s; }
+textarea:focus { outline: none; border-color: var(--acc); }
+.run-btn { margin-top: 10px; width: 100%; padding: 11px; background: linear-gradient(135deg, rgba(0,229,176,.15), rgba(59,130,246,.1)); border: 1px solid rgba(0,229,176,.35); border-radius: 9px; color: var(--acc); font-family: var(--mono); font-size: 13px; letter-spacing: .08em; cursor: pointer; transition: all .2s; }
+.run-btn:hover { background: rgba(0,229,176,.18); border-color: var(--acc); }
+.run-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.pipeline-section { display: none; }
+.pipeline-section.show { display: block; }
+.pipe-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 1rem; }
+
+.stage { background: var(--surf); border: 1px solid var(--b1); border-radius: 12px; padding: 1.1rem 1.3rem; margin-bottom: 8px; opacity: 0; transform: translateY(12px); transition: opacity .4s, transform .4s, border-color .3s; }
+.stage.visible { opacity: 1; transform: translateY(0); }
+.stage.active { border-color: rgba(0,229,176,.3); }
+.stage.done { border-color: rgba(16,185,129,.2); }
+.stage-header { display: flex; align-items: center; gap: 10px; }
+.stage-num { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 22px; }
+.stage-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; background: var(--surf2); flex-shrink: 0; }
+.stage.active .stage-icon { background: rgba(0,229,176,.12); }
+.stage.done .stage-icon { background: rgba(16,185,129,.12); }
+.stage-name { font-size: 14px; font-weight: 500; flex: 1; }
+.stage-status { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 20px; }
+.status-wait { color: var(--muted); border: 1px solid var(--b1); }
+.status-run { color: var(--warn); border: 1px solid rgba(245,158,11,.3); background: rgba(245,158,11,.06); animation: blink .8s infinite; }
+.status-done { color: var(--ok); border: 1px solid rgba(16,185,129,.3); background: rgba(16,185,129,.06); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+.stage-output { margin-top: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--b1); border-radius: 7px; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; display: none; }
+.stage.done .stage-output { display: block; }
+.hl-acc { color: var(--acc); }
+.hl-warn { color: var(--warn); }
+.hl-ok { color: var(--ok); }
+.hl-danger { color: var(--danger); }
+.tag-dis { background: rgba(0,229,176,.1); color: var(--acc); padding: 1px 6px; border-radius: 3px; margin: 0 2px; font-size: 11px; }
+.tag-sym { background: rgba(245,158,11,.1); color: var(--warn); padding: 1px 6px; border-radius: 3px; margin: 0 2px; font-size: 11px; }
+.tag-neg { background: rgba(239,68,68,.1); color: var(--danger); padding: 1px 6px; border-radius: 3px; margin: 0 2px; font-size: 11px; }
+.progress-line { height: 2px; background: var(--b1); border-radius: 2px; margin: 1rem 0; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc2)); border-radius: 2px; width: 0%; transition: width .4s ease; }
+
+.ambig-section { display: none; margin-top: 1.5rem; }
+.ambig-section.show { display: block; }
+.ambig-card { background: rgba(245,158,11,.05); border: 1px solid rgba(245,158,11,.25); border-radius: 12px; padding: 1.3rem; }
+.ambig-header { display: flex; align-items: center; gap: 8px; margin-bottom: .8rem; }
+.ambig-icon { font-size: 14px; }
+.ambig-title { font-family: var(--mono); font-size: 11px; color: var(--warn); letter-spacing: .12em; text-transform: uppercase; }
+.ambig-q { font-size: 14px; color: var(--text); margin-bottom: 1rem; line-height: 1.5; }
+.ambig-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ambig-opt { padding: 7px 16px; border: 1px solid var(--b2); border-radius: 25px; background: var(--surf2); color: var(--muted); font-size: 13px; cursor: pointer; transition: all .2s; }
+.ambig-opt:hover { border-color: var(--acc); color: var(--acc); }
+.ambig-opt.sel { border-color: var(--acc); color: var(--acc); background: rgba(0,229,176,.1); font-weight: 500; }
+
+.conf-compare { display: none; margin-top: 1rem; background: var(--surf); border: 1px solid var(--b1); border-radius: 9px; padding: 12px; }
+.conf-compare.show { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.conf-item { font-family: var(--mono); font-size: 12px; }
+.conf-before { color: var(--warn); }
+.conf-after { color: var(--ok); }
+.conf-arrow { color: var(--muted); }
+.conf-boost { color: var(--acc); font-weight: 500; }
+
+.output-section { display: none; margin-top: 1.5rem; }
+.output-section.show { display: block; }
+.output-header { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 1rem; }
+.icd-card { background: var(--surf); border: 1px solid var(--b1); border-radius: 12px; padding: 1.2rem 1.3rem; margin-bottom: 8px; transition: border-color .3s, transform .3s; position: relative; overflow: hidden; }
+.icd-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: transparent; transition: background .3s; }
+.icd-card.primary::before { background: var(--acc); }
+.icd-card.secondary::before { background: var(--acc2); }
+.icd-card.tertiary::before { background: var(--muted); }
+.icd-card.primary { border-color: rgba(0,229,176,.25); }
+.icd-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.icd-code { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--acc); min-width: 72px; }
+.icd-card.secondary .icd-code { color: var(--acc2); }
+.icd-card.tertiary .icd-code { color: var(--muted); }
+.icd-label { font-size: 14px; flex: 1; }
+.icd-badge { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 20px; }
+.badge-primary { background: rgba(0,229,176,.1); color: var(--acc); border: 1px solid rgba(0,229,176,.25); }
+.badge-alt { background: rgba(107,122,150,.1); color: var(--muted); border: 1px solid var(--b1); }
+.conf-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.conf-label { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 64px; }
+.bar-outer { flex: 1; height: 4px; background: var(--b2); border-radius: 2px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; width: 0%; transition: width .8s ease; }
+.fill-acc { background: var(--acc); }
+.fill-acc2 { background: var(--acc2); }
+.fill-muted { background: var(--muted); }
+.conf-pct { font-family: var(--mono); font-size: 12px; min-width: 36px; text-align: right; transition: color .3s; }
+
+.explanation { margin-top: 10px; background: var(--bg); border: 1px solid var(--b1); border-radius: 7px; padding: 10px 12px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.expl-trigger { background: rgba(0,229,176,.1); color: var(--acc); padding: 1px 6px; border-radius: 3px; font-family: var(--mono); font-size: 11px; margin: 0 2px; }
+
+.reset-btn { margin-top: 1.5rem; width: 100%; padding: 9px; background: transparent; border: 1px solid var(--b1); border-radius: 9px; color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; transition: all .2s; letter-spacing: .06em; }
+.reset-btn:hover { border-color: var(--b2); color: var(--text); }
+
+.before-after { display: none; margin-top: 1rem; background: var(--surf); border: 1px solid var(--b1); border-radius: 12px; padding: 1.2rem; }
+.before-after.show { display: block; }
+.ba-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .8rem; }
+.ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ba-col { }
+.ba-label { font-family: var(--mono); font-size: 11px; margin-bottom: 6px; }
+.ba-label.before { color: var(--warn); }
+.ba-label.after { color: var(--ok); }
+.ba-code { font-family: var(--mono); font-size: 13px; padding: 8px 10px; border-radius: 7px; line-height: 1.6; }
+.ba-code.before { background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.2); color: var(--warn); }
+.ba-code.after { background: rgba(16,185,129,.06); border: 1px solid rgba(16,185,129,.2); color: var(--ok); }
+
+@media (max-width: 600px) { .ba-grid { grid-template-columns: 1fr; } .conf-compare { flex-direction: column; gap: 6px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="logo"><span class="logo-back" onclick="goBack()">&larr;</span>CLIN<span>/</span>CODE <span style="margin-left:8px;font-size:10px;color:var(--muted)">— Explainable ICD-10 AI · v0.1.0</span></div>
+  <h1>Clinical note to ICD-10 —<br/><em>with reasoning.</em></h1>
+  <p class="subtitle">Paste a doctor's note, watch the AI pipeline reason through it, resolve ambiguity, and explain every code it picks.</p>
+
+  <div class="input-section">
+    <div class="input-label">// SELECT EXAMPLE OR TYPE YOUR OWN</div>
+    <div class="preset-row">
+      <button class="preset-btn active" data-case="0" onclick="loadPreset(0, this)">Diabetes + CKD</button>
+      <button class="preset-btn" data-case="1" onclick="loadPreset(1, this)">Chest pain + SOB</button>
+      <button class="preset-btn" data-case="2" onclick="loadPreset(2, this)">Asthma exacerbation</button>
+    </div>
+    <textarea id="note-input" placeholder="Type a clinical note...">Patient has diabetes with kidney issues and proteinuria. No evidence of retinopathy.</textarea>
+    <button class="run-btn" id="run-btn" onclick="runPipeline()">▶ &nbsp;RUN CLINCODE PIPELINE</button>
+  </div>
+
+  <div class="pipeline-section" id="pipeline-section">
+    <div class="pipe-title">// REASONING PIPELINE</div>
+    <div class="progress-line"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <div class="stage" id="s0">
+      <div class="stage-header">
+        <span class="stage-num">01</span>
+        <div class="stage-icon">⚙</div>
+        <span class="stage-name">Preprocessing &amp; normalization</span>
+        <span class="stage-status status-wait" id="st0">WAITING</span>
+      </div>
+      <div class="stage-output" id="so0"></div>
+    </div>
+
+    <div class="stage" id="s1">
+      <div class="stage-header">
+        <span class="stage-num">02</span>
+        <div class="stage-icon">🔍</div>
+        <span class="stage-name">Medical entity extraction</span>
+        <span class="stage-status status-wait" id="st1">WAITING</span>
+      </div>
+      <div class="stage-output" id="so1"></div>
+    </div>
+
+    <div class="stage" id="s2">
+      <div class="stage-header">
+        <span class="stage-num">03</span>
+        <div class="stage-icon">↗</div>
+        <span class="stage-name">Relationship mapping</span>
+        <span class="stage-status status-wait" id="st2">WAITING</span>
+      </div>
+      <div class="stage-output" id="so2"></div>
+    </div>
+
+    <div class="stage" id="s3">
+      <div class="stage-header">
+        <span class="stage-num">04</span>
+        <div class="stage-icon">⚠</div>
+        <span class="stage-name">Ambiguity detection</span>
+        <span class="stage-status status-wait" id="st3">WAITING</span>
+      </div>
+      <div class="stage-output" id="so3"></div>
+    </div>
+
+    <div class="stage" id="s4">
+      <div class="stage-header">
+        <span class="stage-num">05</span>
+        <div class="stage-icon">⬡</div>
+        <span class="stage-name">ICD-10 code prediction</span>
+        <span class="stage-status status-wait" id="st4">WAITING</span>
+      </div>
+      <div class="stage-output" id="so4"></div>
+    </div>
+
+    <div class="stage" id="s5">
+      <div class="stage-header">
+        <span class="stage-num">06</span>
+        <div class="stage-icon">✦</div>
+        <span class="stage-name">Explainability trace</span>
+        <span class="stage-status status-wait" id="st5">WAITING</span>
+      </div>
+      <div class="stage-output" id="so5"></div>
+    </div>
+  </div>
+
+  <div class="ambig-section" id="ambig-section">
+    <div class="ambig-card" id="ambig-card">
+      <div class="ambig-header">
+        <span class="ambig-icon" style="color:var(--warn);font-size:14px">▲</span>
+        <span class="ambig-title">Ambiguity detected — clinician input required</span>
+      </div>
+      <div class="ambig-q" id="ambig-q">Loading...</div>
+      <div class="ambig-opts" id="ambig-opts"></div>
+      <div class="conf-compare" id="conf-compare">
+        <span class="conf-item conf-before" id="cc-before">Before: 61%</span>
+        <span class="conf-arrow">→</span>
+        <span class="conf-item conf-after" id="cc-after">After: 91%</span>
+        <span class="conf-item conf-boost" id="cc-boost">+30% confidence</span>
+      </div>
+    </div>
+    <div class="before-after" id="before-after">
+      <div class="ba-title">// BEFORE vs AFTER CLARIFICATION</div>
+      <div class="ba-grid">
+        <div class="ba-col">
+          <div class="ba-label before">BEFORE</div>
+          <div class="ba-code before" id="ba-before">—</div>
+        </div>
+        <div class="ba-col">
+          <div class="ba-label after">AFTER</div>
+          <div class="ba-code after" id="ba-after">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-section" id="output-section">
+    <div class="output-header">// ICD-10 OUTPUT — RANKED BY CONFIDENCE</div>
+    <div id="icd-results"></div>
+    <button class="reset-btn" onclick="resetAll()">↺ &nbsp;RESET — TRY ANOTHER NOTE</button>
+  </div>
+</div>
+
+<script>
+const CASES = [
+  {
+    note: "Patient has diabetes with kidney issues and proteinuria. No evidence of retinopathy.",
+    stages: [
+      `<span class="hl-acc">DM</span> → Diabetes Mellitus &nbsp;·&nbsp; <span class="hl-acc">CKD</span> → Chronic Kidney Disease<br/><span class="hl-acc">HTN</span> not present &nbsp;·&nbsp; Negation detected: <span class="hl-danger">"No evidence of retinopathy"</span>`,
+      `<span class="tag-dis">DISEASE</span> Diabetes Mellitus (type unspecified) &nbsp;<span class="tag-dis">DISEASE</span> Chronic Kidney Disease<br/><span class="tag-sym">SYMPTOM</span> Proteinuria &nbsp;<span class="tag-neg">NEGATED</span> Diabetic Retinopathy`,
+      `Diabetes Mellitus <span class="hl-acc">→ complication →</span> Chronic Kidney Disease<br/>CKD <span class="hl-acc">→ manifests as →</span> Proteinuria<br/>Retinopathy <span class="hl-danger">→ EXCLUDED (negation)</span>`,
+      `<span class="hl-warn">FLAG:</span> diabetes_type_unspecified — Type 1 vs Type 2 ambiguous<br/><span class="hl-warn">FLAG:</span> ckd_stage_unknown — no creatinine/GFR in note<br/><span class="hl-ok">OK:</span> negation_scoped — retinopathy correctly excluded`,
+      `<span class="hl-warn">PRE-CLARIFICATION</span> E13.65 (unspec DM + CKD) → 0.61<br/><span class="hl-muted">Awaiting type clarification to upgrade confidence...</span>`,
+      `Primary code driven by: <span class="hl-acc">"diabetes"</span> + <span class="hl-acc">"proteinuria"</span> + <span class="hl-acc">"kidney"</span><br/>CKD code from: <span class="hl-acc">"kidney issues"</span> contextual expansion<br/>Retinopathy: <span class="hl-danger">excluded via NegSpacy negation scope</span>`
+    ],
+    ambig: {
+      q: "Is the patient's diabetes insulin-dependent (Type 1) or non-insulin-dependent (Type 2)? This determines the ICD prefix.",
+      opts: [
+        { label: "Type 1 Diabetes (E10)", code: "E10", conf_before: 61, conf_after: 93, reason: "insulin-dependent pattern selected", before: "E13.65 — Unspecified DM\n+ CKD, conf: 61%", after: "E10.65 — Type 1 DM with\nCKD stage 3, conf: 93%" },
+        { label: "Type 2 Diabetes (E11)", code: "E11", conf_before: 61, conf_after: 91, reason: "non-insulin-dependent selected", before: "E13.65 — Unspecified DM\n+ CKD, conf: 61%", after: "E11.65 — Type 2 DM with\nCKD stage 3, conf: 91%" },
+        { label: "Other / Unknown", code: "E13", conf_before: 61, conf_after: 72, reason: "insufficient data — chart review recommended", before: "E13.65 — Unspecified DM\n+ CKD, conf: 61%", after: "E13.65 — Other spec DM\n+ CKD, conf: 72%" }
+      ]
+    },
+    codes_default: [
+      { id: "E13.65", label: "Unspecified DM with hyperglycemia + CKD", conf: 61, type: "primary", expl: "Pre-clarification estimate. Diabetes type unknown — using unspecified prefix E13 until confirmed by clinician." },
+      { id: "N18.3", label: "Chronic kidney disease, stage 3 (moderate)", conf: 83, type: "secondary", expl: "Derived from 'kidney issues' + proteinuria co-occurrence, stage 3 is statistically most common in DM + proteinuria pattern." },
+      { id: "E13.69", label: "Other specified DM with other complication", conf: 19, type: "tertiary", expl: "Low confidence alternative — considered when exact complication type is undetermined." }
+    ],
+    codes_resolved: {
+      "E10": [
+        { id: "E10.65", label: "Type 1 DM with hyperglycemia + CKD", conf: 93, type: "primary", expl: "Clinician confirmed Type 1. E10 prefix applied. CKD + proteinuria co-occurrence confirms diabetic nephropathy pattern." },
+        { id: "N18.3", label: "Chronic kidney disease, stage 3", conf: 89, type: "secondary", expl: "CKD stage 3 retained — consistent with proteinuria severity in T1DM context." },
+        { id: "Z87.39", label: "Personal history of other endocrine disorders", conf: 41, type: "tertiary", expl: "Optional supplementary code for longitudinal history tracking." }
+      ],
+      "E11": [
+        { id: "E11.65", label: "Type 2 DM with hyperglycemia + CKD", conf: 91, type: "primary", expl: "Clinician confirmed Type 2. E11 prefix applied. Most prevalent DM type + CKD + proteinuria = strong classifier hit." },
+        { id: "N18.3", label: "Chronic kidney disease, stage 3", conf: 89, type: "secondary", expl: "CKD stage 3 retained — standard pairing with T2DM nephropathy presentation." },
+        { id: "E11.69", label: "T2DM with other specified complication", conf: 28, type: "tertiary", expl: "Low-confidence alternative — only applicable if additional complications are discovered in chart." }
+      ],
+      "E13": [
+        { id: "E13.65", label: "Other spec DM with CKD", conf: 72, type: "primary", expl: "Type undetermined — E13 prefix retained. Confidence improved marginally by confirming 'other/unknown' rather than silent assumption." },
+        { id: "N18.3", label: "Chronic kidney disease, stage 3", conf: 83, type: "secondary", expl: "CKD code unchanged — not affected by DM type resolution." },
+        { id: "E13.69", label: "Other spec DM with other complication", conf: 31, type: "tertiary", expl: "Kept as fallback. Chart review strongly recommended for this case." }
+      ]
+    }
+  },
+  {
+    note: "65-year-old male presenting with crushing chest pain radiating to left arm, diaphoresis and shortness of breath. Onset 2 hours ago.",
+    stages: [
+      `<span class="hl-acc">SOB</span> → Shortness of Breath &nbsp;·&nbsp; <span class="hl-acc">CP</span> → Chest Pain<br/>Age extracted: <span class="hl-acc">65-year-old male</span> &nbsp;·&nbsp; Onset: <span class="hl-acc">2 hours ago</span>`,
+      `<span class="tag-sym">SYMPTOM</span> Crushing chest pain <span class="tag-sym">SYMPTOM</span> Dyspnea<br/><span class="tag-sym">SYMPTOM</span> Diaphoresis <span class="tag-sym">SYMPTOM</span> Left arm radiation`,
+      `Chest pain <span class="hl-acc">→ classic presentation →</span> Myocardial Infarction<br/>Diaphoresis + radiation <span class="hl-acc">→ supports →</span> STEMI/NSTEMI pattern`,
+      `<span class="hl-warn">FLAG:</span> mi_type_unknown — STEMI vs NSTEMI not specified<br/><span class="hl-warn">FLAG:</span> episode_type_unknown — initial vs subsequent encounter<br/><span class="hl-ok">OK:</span> laterality_known — left arm radiation documented`,
+      `<span class="hl-warn">PRE-CLARIFICATION</span> I21.9 (Acute MI unspecified) → 0.67<br/>Awaiting STEMI/NSTEMI confirmation...`,
+      `Primary code from: <span class="hl-acc">"crushing chest pain"</span> + <span class="hl-acc">"left arm radiation"</span> + <span class="hl-acc">"2hr onset"</span><br/>Supporting: <span class="hl-acc">"diaphoresis"</span> + age/sex pattern (65M)<br/>Negation: none detected`
+    ],
+    ambig: {
+      q: "Is this a STEMI (ST-elevation MI) or NSTEMI (non-ST-elevation MI)? This changes the ICD-10 code significantly.",
+      opts: [
+        { label: "STEMI (I21.0–I21.3)", code: "STEMI", conf_before: 67, conf_after: 94, reason: "ST-elevation pattern confirmed", before: "I21.9 — Acute MI\nunspecified, conf: 67%", after: "I21.09 — STEMI other site\nconf: 94%" },
+        { label: "NSTEMI (I21.4)", code: "NSTEMI", conf_before: 67, conf_after: 91, reason: "non-ST-elevation confirmed", before: "I21.9 — Acute MI\nunspecified, conf: 67%", after: "I21.4 — NSTEMI\nconf: 91%" },
+        { label: "Unstable angina (I20.0)", code: "UA", conf_before: 67, conf_after: 79, reason: "no infarction confirmed — unstable angina pathway", before: "I21.9 — Acute MI\nunspecified, conf: 67%", after: "I20.0 — Unstable angina\nconf: 79%" }
+      ]
+    },
+    codes_default: [
+      { id: "I21.9", label: "Acute myocardial infarction, unspecified", conf: 67, type: "primary", expl: "Classic MI presentation. Type unconfirmed — using unspecified code until STEMI/NSTEMI differentiated by ECG/troponin." },
+      { id: "R07.9", label: "Chest pain, unspecified", conf: 78, type: "secondary", expl: "Symptom code retained as secondary while primary diagnosis is being confirmed by tests." },
+      { id: "R06.0", label: "Dyspnea, unspecified", conf: 71, type: "tertiary", expl: "SOB documented as concurrent symptom — coded separately per ICD-10 guidelines." }
+    ],
+    codes_resolved: {
+      "STEMI": [
+        { id: "I21.09", label: "STEMI involving other coronary artery", conf: 94, type: "primary", expl: "STEMI confirmed. Anterior/inferior not specified — I21.09 applied. Crushing pain + arm radiation consistent with LAD territory." },
+        { id: "I21.4", label: "Non-ST elevation MI (reference)", conf: 12, type: "tertiary", expl: "Excluded — STEMI confirmed by clinician. Kept for reference." },
+        { id: "R06.09", label: "Other forms of dyspnea", conf: 71, type: "secondary", expl: "SOB secondary code retained." }
+      ],
+      "NSTEMI": [
+        { id: "I21.4", label: "Non-ST elevation myocardial infarction", conf: 91, type: "primary", expl: "NSTEMI confirmed. Troponin elevation without ST-elevation pattern selected." },
+        { id: "I20.0", label: "Unstable angina (differential)", conf: 23, type: "tertiary", expl: "Low-confidence differential — excluded by clinician NSTEMI confirmation." },
+        { id: "R06.09", label: "Dyspnea (secondary)", conf: 71, type: "secondary", expl: "SOB secondary code retained." }
+      ],
+      "UA": [
+        { id: "I20.0", label: "Unstable angina", conf: 79, type: "primary", expl: "No confirmed infarction — unstable angina pathway. Consider troponin serial testing to rule out NSTEMI." },
+        { id: "R07.9", label: "Chest pain, unspecified", conf: 78, type: "secondary", expl: "Symptom code retained." },
+        { id: "R06.09", label: "Dyspnea (secondary)", conf: 71, type: "tertiary", expl: "SOB secondary code." }
+      ]
+    }
+  },
+  {
+    note: "Child age 8 with worsening asthma. Has been using rescue inhaler multiple times daily. No fever. Mild wheezing on auscultation.",
+    stages: [
+      `Age: <span class="hl-acc">8-year-old child</span> &nbsp;·&nbsp; Condition: <span class="hl-acc">Asthma</span><br/>Negation: <span class="hl-danger">"No fever"</span> → febrile component excluded`,
+      `<span class="tag-dis">DISEASE</span> Asthma (severity unspecified) <span class="tag-sym">SYMPTOM</span> Wheezing<br/><span class="tag-neg">NEGATED</span> Fever &nbsp;·&nbsp; Modifier: <span class="tag-sym">FREQ</span> Multiple times daily`,
+      `Asthma <span class="hl-acc">→ exacerbation →</span> increased rescue inhaler use<br/>Wheezing <span class="hl-acc">→ supports →</span> active episode in progress`,
+      `<span class="hl-warn">FLAG:</span> asthma_severity_unknown — mild/moderate/severe not documented<br/><span class="hl-warn">FLAG:</span> asthma_type_unknown — allergic vs non-allergic<br/><span class="hl-ok">OK:</span> fever_excluded — negation correctly scoped`,
+      `<span class="hl-warn">PRE-CLARIFICATION</span> J45.901 (unspec asthma with exacerb) → 0.58<br/>Severity classification pending...`,
+      `Code from: <span class="hl-acc">"worsening asthma"</span> + <span class="hl-acc">"rescue inhaler multiple times daily"</span><br/>Exacerbation confirmed by: <span class="hl-acc">"worsening"</span> + frequency indicator<br/>Severity: <span class="hl-warn">undetermined — requires peak flow or clinical grading</span>`
+    ],
+    ambig: {
+      q: "What is the severity of this asthma exacerbation? This determines whether J45.21, J45.31, or J45.41 applies.",
+      opts: [
+        { label: "Mild intermittent (J45.21)", code: "MILD", conf_before: 58, conf_after: 88, reason: "mild intermittent with exacerbation", before: "J45.901 — Unspec asthma\nexacerbation, conf: 58%", after: "J45.21 — Mild intermittent\nexacerbation, conf: 88%" },
+        { label: "Mild persistent (J45.31)", code: "PERSIST", conf_before: 58, conf_after: 85, reason: "mild persistent with acute exacerbation", before: "J45.901 — Unspec asthma\nexacerbation, conf: 58%", after: "J45.31 — Mild persistent\nacute exacerbation, conf: 85%" },
+        { label: "Moderate persistent (J45.41)", code: "MODERATE", conf_before: 58, conf_after: 82, reason: "moderate persistent given daily symptoms", before: "J45.901 — Unspec asthma\nexacerbation, conf: 58%", after: "J45.41 — Moderate persistent\nexacerbation, conf: 82%" }
+      ]
+    },
+    codes_default: [
+      { id: "J45.901", label: "Unspecified asthma with acute exacerbation", conf: 58, type: "primary", expl: "Asthma exacerbation confirmed by rescue inhaler frequency + worsening symptoms. Severity unclassified." },
+      { id: "R06.2", label: "Wheezing", conf: 82, type: "secondary", expl: "Auscultation-confirmed wheezing coded separately as concurrent symptom." },
+      { id: "J45.909", label: "Unspecified asthma, uncomplicated", conf: 22, type: "tertiary", expl: "Alternate if exacerbation status is questioned. Low confidence given rescue inhaler frequency." }
+    ],
+    codes_resolved: {
+      "MILD": [
+        { id: "J45.21", label: "Mild intermittent asthma with acute exacerbation", conf: 88, type: "primary", expl: "Mild intermittent confirmed. Rescue inhaler use + wheezing consistent with intermittent pattern in pediatric patient." },
+        { id: "R06.2", label: "Wheezing (secondary)", conf: 82, type: "secondary", expl: "Wheezing retained as secondary symptom code." },
+        { id: "J45.20", label: "Mild intermittent, uncomplicated", conf: 14, type: "tertiary", expl: "Alternative if exacerbation is not confirmed — excluded here." }
+      ],
+      "PERSIST": [
+        { id: "J45.31", label: "Mild persistent asthma with acute exacerbation", conf: 85, type: "primary", expl: "Mild persistent selected — daily rescue use suggests persistent category despite mild descriptor." },
+        { id: "R06.2", label: "Wheezing (secondary)", conf: 82, type: "secondary", expl: "Wheezing retained." },
+        { id: "Z87.39", label: "History of respiratory disorder", conf: 35, type: "tertiary", expl: "Optional history code for pediatric asthma tracking." }
+      ],
+      "MODERATE": [
+        { id: "J45.41", label: "Moderate persistent asthma with acute exacerbation", conf: 82, type: "primary", expl: "Moderate persistent — multiple daily rescue inhaler uses supports this classification over mild." },
+        { id: "R06.2", label: "Wheezing (secondary)", conf: 82, type: "secondary", expl: "Wheezing retained." },
+        { id: "J45.31", label: "Mild persistent (differential)", conf: 41, type: "tertiary", expl: "Kept as differential — borderline case between mild and moderate persistent." }
+      ]
+    }
+  }
+];
+
+let activeCase = 0;
+let resolved = false;
+let currentCodes = [];
+let pipelineRunning = false;
+
+function goBack() {
+  window.location.href = 'index.html';
+}
+
+function loadPreset(idx, btn) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeCase = idx;
+  document.getElementById('note-input').value = CASES[idx].note;
+}
+
+function setStatus(idx, state) {
+  const el = document.getElementById('st' + idx);
+  const stage = document.getElementById('s' + idx);
+  el.className = 'stage-status';
+  stage.className = 'stage';
+  if (state === 'run') { el.classList.add('status-run'); el.textContent = 'RUNNING'; stage.classList.add('active'); }
+  else if (state === 'done') { el.classList.add('status-done'); el.textContent = 'DONE'; stage.classList.add('done'); }
+  else { el.classList.add('status-wait'); el.textContent = 'WAITING'; }
+  stage.classList.add('visible');
+}
+
+function setProgress(pct) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runPipeline() {
+  if (pipelineRunning) return;
+  pipelineRunning = true;
+  resolved = false;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⟳  ANALYZING...';
+
+  const cs = CASES[activeCase];
+  const ps = document.getElementById('pipeline-section');
+  ps.classList.add('show');
+
+  for (let i = 0; i < 6; i++) {
+    const s = document.getElementById('s' + i);
+    s.className = 'stage visible';
+    document.getElementById('st' + i).className = 'stage-status status-wait';
+    document.getElementById('st' + i).textContent = 'WAITING';
+    document.getElementById('so' + i).innerHTML = '';
+  }
+  document.getElementById('ambig-section').classList.remove('show');
+  document.getElementById('output-section').classList.remove('show');
+  document.getElementById('before-after').classList.remove('show');
+  document.getElementById('conf-compare').classList.remove('show');
+  document.querySelectorAll('.ambig-opt').forEach(b => b.classList.remove('sel'));
+  setProgress(0);
+
+  for (let i = 0; i < 6; i++) {
+    setStatus(i, 'run');
+    setProgress((i / 6) * 85);
+    await sleep(700 + Math.random() * 400);
+    document.getElementById('so' + i).innerHTML = cs.stages[i];
+    setStatus(i, 'done');
+    await sleep(100);
+  }
+  setProgress(90);
+  await sleep(300);
+
+  showAmbig(cs);
+  showOutput(cs.codes_default);
+  setProgress(100);
+  btn.disabled = false;
+  btn.textContent = '▶  RUN CLINCODE PIPELINE';
+  pipelineRunning = false;
+}
+
+function showAmbig(cs) {
+  const sec = document.getElementById('ambig-section');
+  document.getElementById('ambig-q').textContent = cs.ambig.q;
+  const opts = document.getElementById('ambig-opts');
+  opts.innerHTML = '';
+  cs.ambig.opts.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'ambig-opt';
+    b.textContent = opt.label;
+    b.onclick = () => resolveAmbig(opt, cs);
+    opts.appendChild(b);
+  });
+  sec.classList.add('show');
+}
+
+function resolveAmbig(opt, cs) {
+  document.querySelectorAll('.ambig-opt').forEach(b => b.classList.remove('sel'));
+  event.target.classList.add('sel');
+
+  const cc = document.getElementById('conf-compare');
+  document.getElementById('cc-before').textContent = 'Before: ' + opt.conf_before + '%';
+  document.getElementById('cc-after').textContent = 'After: ' + opt.conf_after + '%';
+  const boost = opt.conf_after - opt.conf_before;
+  document.getElementById('cc-boost').textContent = '+' + boost + '% confidence boost';
+  cc.classList.add('show');
+
+  document.getElementById('ba-before').textContent = opt.before;
+  document.getElementById('ba-after').textContent = opt.after;
+  document.getElementById('before-after').classList.add('show');
+
+  const resolved_codes = cs.codes_resolved[opt.code];
+  showOutput(resolved_codes);
+  resolved = true;
+}
+
+function showOutput(codes) {
+  const sec = document.getElementById('output-section');
+  const container = document.getElementById('icd-results');
+  container.innerHTML = '';
+  sec.classList.add('show');
+  currentCodes = codes;
+
+  codes.forEach((c, i) => {
+    const card = document.createElement('div');
+    card.className = 'icd-card ' + c.type;
+    const fillClass = c.type === 'primary' ? 'fill-acc' : c.type === 'secondary' ? 'fill-acc2' : 'fill-muted';
+    const pctColor = c.type === 'primary' ? 'var(--acc)' : c.type === 'secondary' ? 'var(--acc2)' : 'var(--muted)';
+    const badge = c.type === 'primary' ? '<span class="icd-badge badge-primary">BEST MATCH</span>' : '<span class="icd-badge badge-alt">ALTERNATE</span>';
+    card.innerHTML = `
+      <div class="icd-row">
+        <span class="icd-code">${c.id}</span>
+        <span class="icd-label">${c.label}</span>
+        ${badge}
+      </div>
+      <div class="conf-row">
+        <span class="conf-label">CONFIDENCE</span>
+        <div class="bar-outer"><div class="bar-fill ${fillClass}" id="bar-${i}"></div></div>
+        <span class="conf-pct" id="pct-${i}" style="color:${pctColor}">0%</span>
+      </div>
+      <div class="explanation">${c.expl}</div>`;
+    container.appendChild(card);
+    setTimeout(() => {
+      document.getElementById('bar-' + i).style.width = c.conf + '%';
+      animateNum('pct-' + i, 0, c.conf, 800, '%');
+    }, 200 + i * 150);
+  });
+}
+
+function animateNum(id, from, to, dur, suffix) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  function frame(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const v = Math.round(from + (to - from) * t);
+    el.textContent = v + suffix;
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function resetAll() {
+  document.getElementById('pipeline-section').classList.remove('show');
+  document.getElementById('ambig-section').classList.remove('show');
+  document.getElementById('output-section').classList.remove('show');
+  document.getElementById('progress-fill').style.width = '0%';
+  for (let i = 0; i < 6; i++) {
+    document.getElementById('s' + i).className = 'stage';
+    document.getElementById('st' + i).className = 'stage-status status-wait';
+    document.getElementById('st' + i).textContent = 'WAITING';
+    document.getElementById('so' + i).innerHTML = '';
+  }
+  resolved = false;
+  pipelineRunning = false;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = false;
+  btn.textContent = '▶  RUN CLINCODE PIPELINE';
+}
+</script>
+
+</body>
+</html>
